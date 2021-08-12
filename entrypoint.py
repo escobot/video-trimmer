@@ -1,4 +1,5 @@
-import subprocess
+from moviepy.editor import *
+from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 
 
 def parse_timestamp_file(file):
@@ -8,7 +9,8 @@ def parse_timestamp_file(file):
         line = f.readline()
         if not line:
             break
-        timestamps.append({'timestamp': to_hours(line)})
+        # todo: also add video title
+        timestamps.append({'timestamp': to_seconds(line)})
     f.close()
     return timestamps
 
@@ -32,18 +34,27 @@ def to_hours(timestamp):
 
 def cut_video(timestamps):
     i = 0
-    while i < len(timestamps):
+    clip = VideoFileClip("input/video.mp4")
+    video_dur = clip.duration
+    print(video_dur)
+    # todo: create tmp directory to store clips
+    while i < len(timestamps) - 1:
         start_time = timestamps[i]['timestamp']
         end_time = timestamps[i+1]['timestamp']
-        output = f"output/{i+1}.mp4"
-        subprocess.run(
-            ['ffmpeg', '-i', 'input/video.mp4', '-ss', start_time, '-t', end_time, '-async', '1', '-c', 'copy', output])
+        output = f"output/0{i+1}.mp4" if (i + 1) < 10 else f"output/{i+1}.mp4"
+        ffmpeg_extract_subclip("input/video.mp4", start_time, end_time, targetname=output)
         i = i + 1
+
+
+def concatenate_clips():
+    clips = next(os.walk('output'))[2]
+    print(clips)
 
 
 def main():
     times = parse_timestamp_file('input/timestamps2.txt')
     cut_video(times)
+    concatenate_clips()
 
 
 if __name__ == "__main__":
