@@ -35,17 +35,19 @@ def to_hours(timestamp):
     return timestamp.strip()
 
 
-def cut_video(timestamps):
+def cut_video(video, timestamps):
     i = 0
-    clip = VideoFileClip("input/25.mp4")
-    video_dur = clip.duration
-    print(video_dur)
+    video_dur = video.duration
     # todo: create tmp directory to store clips
     while i < len(timestamps) - 1:
-        start_time = timestamps[i]['timestamp']
-        end_time = timestamps[i+1]['timestamp']
+        if i is len(timestamps) - 1:
+            start_time = timestamps[i]['timestamp']
+            end_time = video_dur
+        else:
+            start_time = timestamps[i]['timestamp']
+            end_time = timestamps[i+1]['timestamp']
         output = f"output/0{i+1}.mp4" if (i + 1) < 10 else f"output/{i+1}.mp4"
-        ffmpeg_extract_subclip("input/25.mp4", start_time, end_time, targetname=output)
+        ffmpeg_extract_subclip("input/15.mp4", start_time, end_time, targetname=output)
         i = i + 1
 
 
@@ -53,17 +55,16 @@ def concatenate_clips():
     paths = next(os.walk('output'))[2]
     clips = []
     for c in paths:
-        print(c)
         clips.append(VideoFileClip("output/" + c))
     final = concatenate_videoclips(clips)
-    final.write_videofile("final.mp4")
+    final.write_videofile("final.mp4", fps=60)
 
 
 def main():
-    times = parse_timestamp_file('input/timestamps2.txt')
-    cut_video(times)
+    video = VideoFileClip("input/15.mp4")
+    timestamps = parse_timestamp_file('input/timestamps.txt')
+    cut_video(video, timestamps)
     concatenate_clips()
-    print(times)
 
 
 if __name__ == "__main__":
