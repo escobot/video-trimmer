@@ -38,6 +38,7 @@ def to_hours(timestamp):
 def cut_video(video, timestamps):
     i = 0
     video_dur = video.duration
+    print(video_dur)
     # todo: create tmp directory to store clips
     while i < len(timestamps) - 1:
         if i is len(timestamps) - 1:
