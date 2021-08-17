@@ -1,3 +1,4 @@
+import argparse
 import math
 import random
 
@@ -29,7 +30,7 @@ def parse_video_timestamps(file, duration):
     # set clip end times
     i = 0
     while i < len(clips) - 1:
-        clips[i]['end'] = clips[i+1]['start']
+        clips[i]['end'] = clips[i + 1]['start']
         i = i + 1
     clips[-1]['end'] = math.floor(duration)
 
@@ -57,10 +58,10 @@ def cut_video(video, timestamps):
     return clips
 
 
-def generate_final_video(clips):
+def generate_final_video(clips, output):
     random.shuffle(clips)
 
-    f = open('timestamps.txt', 'w')
+    f = open(f'{output}.txt', 'w')
     only_clips = []
     duration = 0
     for clip in clips:
@@ -75,7 +76,7 @@ def generate_final_video(clips):
     f.close()
 
     video = concatenate_videoclips(only_clips)
-    video.write_videofile("final.mp4", fps=60)
+    video.write_videofile(f"{output}.mp4")
 
 
 def seconds_to_h_m_s(seconds):
@@ -84,14 +85,23 @@ def seconds_to_h_m_s(seconds):
     return f'{h:02d}:{m:02d}:{s:02d}'
 
 
-def main():
-    # todo: error handing if timestamps don't match video
-    video = VideoFileClip("input/15.mp4")
-    timestamps = parse_video_timestamps('input/timestamps.txt', video.duration)
+def main(video_file, timestamps_file, output_name):
+    """
+    @:param video_file path to the mp4 video
+    @:param timestamps_file path to timestamps text file
+    @:param output_name of the generated video and timestamps
+    """
+    video = VideoFileClip(video_file)
+    timestamps = parse_video_timestamps(timestamps_file, video.duration)
     clips = cut_video(video, timestamps)
 
-    generate_final_video(clips)
+    generate_final_video(clips, output_name)
 
 
 if __name__ == "__main__":
-    main()
+    my_parser = argparse.ArgumentParser()
+    my_parser.add_argument('--video', '-v', action='store', type=str, required=True)
+    my_parser.add_argument('--timestamps', '-t', action='store', type=str, required=True)
+    my_parser.add_argument('--output', '-o', action='store', type=str, required=True)
+    args = my_parser.parse_args()
+    main(args.video, args.timestamps, args.output)
