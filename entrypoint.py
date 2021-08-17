@@ -2,7 +2,6 @@ import math
 import random
 
 from moviepy.editor import *
-from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 
 
 def parse_video_timestamps(file, duration):
@@ -47,36 +46,51 @@ def to_seconds(timestamp):
     return int(h) * 3600 + int(m) * 60 + int(s)
 
 
-def to_hours(timestamp):
-    t = timestamp.split(":")
-    if len(t) == 2:
-        timestamp = "00:" + timestamp
-    return timestamp.strip()
-
-
-def cut_video(timestamps):
-    i = 0
-    # todo: create tmp directory to store clips
-    while i < len(timestamps):
-        output = f"output/0{i}.mp4" if i < 10 else f"output/{i}.mp4"
-        ffmpeg_extract_subclip("input/15.mp4", timestamps[i]['start'], timestamps[i]['end'], targetname=output)
-        i = i + 1
-
-
-def concatenate_clips():
-    paths = next(os.walk('output'))[2]
+def cut_video(video, timestamps):
     clips = []
-    for c in paths:
-        clips.append(VideoFileClip("output/" + c))
-    final = concatenate_videoclips(clips)
-    final.write_videofile("final.mp4", fps=60)
+    for clip in timestamps:
+        clips.append({
+            'clip': video.subclip(clip['start'], clip['end']),
+            'title': clip['title'],
+            'duration': clip['end'] - clip['start']
+        })
+    return clips
+
+
+def generate_final_video(clips):
+    random.shuffle(clips)
+
+    f = open('timestamps.txt', 'w')
+    only_clips = []
+    duration = 0
+    for clip in clips:
+        if duration == 0:
+            f.write(f'00:00:00 {clip["title"]}\n')
+            duration = duration + clip["duration"]
+            only_clips.append(clip["clip"])
+        else:
+            f.write(f'{seconds_to_h_m_s(duration)} {clip["title"]}\n')
+            duration = duration + clip["duration"]
+            only_clips.append(clip["clip"])
+    f.close()
+
+    video = concatenate_videoclips(only_clips)
+    video.write_videofile("final.mp4", fps=60)
+
+
+def seconds_to_h_m_s(seconds):
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    return f'{h:02d}:{m:02d}:{s:02d}'
 
 
 def main():
+    # todo: error handing if timestamps don't match video
     video = VideoFileClip("input/15.mp4")
     timestamps = parse_video_timestamps('input/timestamps.txt', video.duration)
-    cut_video(timestamps)
-    concatenate_clips()
+    clips = cut_video(video, timestamps)
+
+    generate_final_video(clips)
 
 
 if __name__ == "__main__":
